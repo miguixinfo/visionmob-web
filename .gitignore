@@ -1,0 +1,61 @@
+# ──────────────────────────────────────
+# VisionMob — .gitignore (monorepo)
+# ──────────────────────────────────────
+
+# ── Python / FastAPI ──
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+.venv/
+venv/
+env/
+pip-wheel-metadata/
+*.log
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# ── Node / React / Vite ──
+node_modules/
+dist/
+.vite/
+.cache/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Variables de entorno ──
+.env
+.env.*
+!.env.example
+
+# ── Docker ──
+docker-compose.override.yml
+
+# ── IDEs ──
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Alembic ──
+backend/alembic/versions/*.pyc
+
+# ── Archivos de audio (nunca al repo) ──
+*.wav
+*.mp3
+*.flac
+*.aiff
