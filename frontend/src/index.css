@@ -1,0 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap');
+
+@import "tailwindcss";
+
+:root {
+  --onyx: #0D0D12;
+  --indigo: #1A1A2E;
+  --slate: #7F77DD;
+  --periwinkle: #B8B8E3;
+  --almond: #EA8951;
+  --linen: #F1EFE8;
+  --blush: #C2668A;
+  --berry: #9E3D65;
+  --blossom: #F0B8CF;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--onyx);
+  color: var(--linen);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}

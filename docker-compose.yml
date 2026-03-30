@@ -1,0 +1,77 @@
+# VisionMob — Docker Compose
+# Entorno local: frontend + backend + PostgreSQL
+# Uso: docker compose up --build
+
+services:
+
+  # ── PostgreSQL ─────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: visionmob-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-visionmob}
+      POSTGRES_USER: ${POSTGRES_USER:-visionmob}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-visionmob} -d ${POSTGRES_DB:-visionmob}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - visionmob-net
+
+  # ── FastAPI Backend ─────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: visionmob-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-visionmob}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-visionmob}
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - visionmob-net
+
+  # ── React + Vite Frontend ───────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: visionmob-frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules # volumen anónimo: evita sobreescribir node_modules del container
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - visionmob-net
+
+volumes:
+  postgres_data:
+    name: visionmob_postgres_data
+
+networks:
+  visionmob-net:
+    name: visionmob-network
+    driver: bridge
