@@ -54,6 +54,20 @@ export function VisionLetter() {
             <span><span className="dot" aria-hidden="true" /> Drops antes que nadie</span>
             <span><span className="dot" aria-hidden="true" /> Sin spam</span>
           </div>
+          <div className="vl-stats" aria-hidden="true">
+            <div>
+              <strong>9</strong>
+              ediciones
+            </div>
+            <div>
+              <strong>340+</strong>
+              suscriptores
+            </div>
+            <div>
+              <strong>0</strong>
+              spam
+            </div>
+          </div>
         </div>
 
         <div className="vl-preview" aria-hidden="true">

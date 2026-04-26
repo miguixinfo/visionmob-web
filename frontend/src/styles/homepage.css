@@ -1081,7 +1081,7 @@ footer {
 .footer-mark {
   font-family: var(--display);
   font-weight: 700;
-  font-size: clamp(120px, 22vw, 360px);
+  font-size: clamp(40px, 16vw, 360px);
   letter-spacing: -.05em;
   line-height: .82;
   text-transform: uppercase;
@@ -1239,6 +1239,166 @@ footer {
   transform: translate(-50%, -50%);
   mix-blend-mode: difference;
   will-change: transform;
+}
+
+/* ── NAV TOGGLE BUTTON ── */
+.nav-toggle {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: inherit;
+  position: relative;
+  z-index: 62;
+}
+
+.nav-toggle span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 2px;
+  transition: transform .28s ease, opacity .2s ease;
+  transform-origin: center;
+}
+
+.nav-toggle.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-toggle.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.nav-toggle.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ── VL STATS (mobile-only, hidden by default) ── */
+.vl-stats { display: none; }
+
+/* ── NAV OVERLAY (portal, oculto en desktop) ── */
+.nav-overlay { display: none; }
+
+
+/* ── MOBILE BREAKPOINT ── */
+@media (max-width: 768px) {
+  /* Nav toggle visible */
+  .nav-toggle { display: flex; }
+
+  /* Ocultar links de desktop en móvil */
+  .nav ul { display: none; }
+
+  /* Nav overlay — portal fuera del stacking context del nav */
+  .nav-overlay {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    background: rgba(13, 13, 18, 0.97);
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 20px;
+    padding: 80px 32px 48px;
+    overflow-y: auto;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s ease;
+    z-index: 59;
+  }
+
+  .nav-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .nav-overlay a {
+    font-size: clamp(28px, 9vw, 42px);
+    font-family: var(--display);
+    font-weight: 500;
+    letter-spacing: -.02em;
+    text-transform: uppercase;
+    color: var(--fg);
+    padding: 4px 0;
+    transition: color .2s;
+  }
+
+  .nav-overlay a:hover,
+  .nav-overlay a.on { color: var(--slate); }
+
+  /* Section head — single column, sin separación */
+  .section-head {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    margin-bottom: 24px;
+  }
+
+  .section-head .idx {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .section-head .idx .num { display: none; }
+
+  .section-head h2 { margin-top: 0; }
+  .section-head p { margin-top: 10px; }
+
+  /* VisionLetter — hide preview, show stats */
+  .vl-preview { display: none; }
+
+  .vl form { flex-direction: column; }
+  .vl button[type=submit] { width: 100%; }
+
+  .vl-stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    margin-top: 20px;
+    padding: 16px;
+    border: 1px solid var(--hair-strong);
+    border-radius: 12px;
+    background: rgba(127, 119, 221, .06);
+    gap: 8px;
+  }
+
+  .vl-stats > div {
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    padding: 8px 12px;
+    flex: 1;
+    min-width: 80px;
+  }
+
+  .vl-stats > div strong {
+    display: block;
+    font-family: var(--display);
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--slate);
+    letter-spacing: -.02em;
+    margin-bottom: 2px;
+  }
+
+  /* Before/After tabs — scroll horizontal */
+  .ba-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+
+  .ba-tabs::-webkit-scrollbar { display: none; }
+  .ba-tabs button { flex-shrink: 0; font-size: 10px; padding: 8px 12px; }
+
+  /* Before/After head — stack */
+  .ba-head { flex-direction: column; gap: 8px; }
+  .ba-head .meta { text-align: left; }
+
+  /* Service note — stack */
+  .svc-note { flex-direction: column; align-items: flex-start; gap: 10px; }
+}
+
+@media (max-width: 480px) {
+  .proc-grid { grid-template-columns: 1fr; }
 }
 
 @media (hover: none) {

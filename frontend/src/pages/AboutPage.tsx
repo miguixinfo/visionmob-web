@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import '../styles/homepage.css';
 import '../styles/about.css';
 import { Cursor } from '../components/ui/Cursor';
@@ -49,9 +49,9 @@ function PortraitPlaceholder({ label, code, accent }: PortraitProps) {
   );
 }
 
-// ——————— Member card ———————
+// ——————— Member row ———————
 
-interface MemberCardProps {
+interface MemberRowProps {
   idx: string;
   name: string;
   role: string;
@@ -62,27 +62,115 @@ interface MemberCardProps {
   quote: string;
   code: string;
   accent: string;
+  spotifyId?: string;
+  github?: string;
+  linkedin?: string;
 }
 
-function MemberCard({ idx, name, role, tag, city, years, specs, quote, code, accent }: MemberCardProps) {
-  const reveal = useReveal();
+function MemberRow({ idx, name, role, tag, city, years, specs, quote, code, accent, spotifyId, github, linkedin }: MemberRowProps) {
+  const [inView, setInView] = useState(false);
+  const [widgetOpen, setWidgetOpen] = useState(false);
+  const articleRef = useRef<HTMLElement>(null);
+  const widgetRef = useRef<HTMLDivElement>(null);
+  const hasWidget = !!(spotifyId || github || linkedin);
+
+  useEffect(() => {
+    const el = articleRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    if (r.top < window.innerHeight * 0.95 && r.bottom > 0) { setInView(true); return; }
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setInView(true); io.disconnect(); }
+    }, { threshold: 0, rootMargin: '0px 0px -5% 0px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  function handleToggle() {
+    setWidgetOpen(o => {
+      const next = !o;
+      if (next) setTimeout(() => widgetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+      return next;
+    });
+  }
+
+  const cls = ['ab-row', 'reveal', inView && 'in', widgetOpen && 'ab-row--open'].filter(Boolean).join(' ');
+
   return (
-    <article className="ab-card reveal" ref={reveal as React.RefObject<HTMLElement>} data-cursor="big">
-      <PortraitPlaceholder label={name.toUpperCase()} code={code} accent={accent} />
-      <div className="ab-card-head">
-        <span className="ab-card-idx">{idx}</span>
-        <span className="ab-card-tag">{tag}</span>
+    <article
+      ref={articleRef}
+      className={cls}
+      data-cursor="big"
+    >
+      <div className="ab-row-portrait">
+        <PortraitPlaceholder label={name.toUpperCase()} code={code} accent={accent} />
       </div>
-      <h3 className="ab-card-name">{name}</h3>
-      <div className="ab-card-role">{role}</div>
-      <p className="ab-card-quote">
-        <span className="q-mark">"</span>{quote}<span className="q-mark">"</span>
-      </p>
-      <dl className="ab-card-specs">
-        <div><dt>Base</dt><dd>{city}</dd></div>
-        <div><dt>Años</dt><dd>{years}</dd></div>
-        <div><dt>Toca</dt><dd>{specs}</dd></div>
-      </dl>
+
+      <div className="ab-row-info">
+        <div className="ab-row-head">
+          <span className="ab-card-idx">{idx}</span>
+          <span className="ab-card-tag">{tag}</span>
+        </div>
+        <h3 className="ab-row-name">{name}</h3>
+        <div className="ab-card-role">{role}</div>
+        <p className="ab-card-quote">
+          <span className="q-mark">"</span>{quote}<span className="q-mark">"</span>
+        </p>
+        <dl className="ab-card-specs">
+          <div><dt>Base</dt><dd>{city}</dd></div>
+          <div><dt>Años</dt><dd>{years}</dd></div>
+          <div><dt>Toca</dt><dd>{specs}</dd></div>
+        </dl>
+        {hasWidget && (
+          <button
+            className="ab-row-toggle"
+            onClick={handleToggle}
+            aria-expanded={widgetOpen}
+          >
+            {widgetOpen ? '↑ Ver menos' : '↓ Ver más'}
+          </button>
+        )}
+      </div>
+
+      <div className="ab-row-widget" ref={widgetRef}>
+        {spotifyId && (
+          <div className="ab-spotify">
+            <div className="ab-widget-label">◆ ESCUCHA EN SPOTIFY</div>
+            <iframe
+              title={`Spotify · ${name}`}
+              src={`https://open.spotify.com/embed/artist/${spotifyId}?utm_source=generator&theme=0`}
+              width="100%"
+              height="352"
+              style={{ border: 'none' }}
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="eager"
+            />
+          </div>
+        )}
+        {(github || linkedin) && (
+          <div className="ab-social">
+            <div className="ab-widget-label">◇ ENCUÉNTRAME EN</div>
+            {github && (
+              <a href={github} target="_blank" rel="noopener noreferrer" className="ab-social-link">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+                </svg>
+                <span>GitHub</span>
+                <span className="ab-social-arr">↗</span>
+              </a>
+            )}
+            {linkedin && (
+              <a href={linkedin} target="_blank" rel="noopener noreferrer" className="ab-social-link">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                </svg>
+                <span>LinkedIn</span>
+                <span className="ab-social-arr">↗</span>
+              </a>
+            )}
+          </div>
+        )}
+      </div>
     </article>
   );
 }
@@ -148,7 +236,6 @@ function AboutHero() {
 }
 
 function AboutTeam() {
-  const reveal = useReveal();
   return (
     <section className="section" id="equipo">
       <div className="section-head">
@@ -165,8 +252,8 @@ function AboutTeam() {
         </div>
       </div>
 
-      <div className="ab-grid reveal" ref={reveal as React.RefObject<HTMLDivElement>}>
-        <MemberCard
+      <div className="ab-rows">
+        <MemberRow
           idx="01"
           code="flaxe"
           name="Flaxe"
@@ -177,8 +264,9 @@ function AboutTeam() {
           specs="Drill · trap · R&B urbano"
           quote="Si no te pone los pelos de punta a la primera, no está mezclado — está apilado."
           accent="rgba(127,119,221,0.45)"
+          spotifyId="58hvJy4OWGwkh65JRMASeC"
         />
-        <MemberCard
+        <MemberRow
           idx="02"
           code="lz"
           name="Lz"
@@ -189,8 +277,9 @@ function AboutTeam() {
           specs="Mastering · loudness · vinilo"
           quote="El máster no arregla una mierda — afina lo que ya suena bien. Por eso empezamos por el mix."
           accent="rgba(194,102,138,0.40)"
+          spotifyId="528L0u2yXdYMBDFW9bnWmd"
         />
-        <MemberCard
+        <MemberRow
           idx="03"
           code="miguix"
           name="Miguix"
@@ -201,6 +290,8 @@ function AboutTeam() {
           specs="Web · UI · automatización"
           quote="Si la web no carga en dos segundos, el artista ya se fue. Construyo para que el estudio no se note — solo se use."
           accent="rgba(127,221,180,0.38)"
+          github="https://github.com/miguixinfo"
+          linkedin="https://www.linkedin.com/in/miguelgomezdev/"
         />
       </div>
     </section>
