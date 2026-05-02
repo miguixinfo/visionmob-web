@@ -1,183 +1,306 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import portfolioData from '../../data/portfolio.json';
 import { useReveal } from '../../hooks/useReveal';
 import { Icons } from '../ui/Icons';
 
-interface Track {
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface AudioEntry {
+  before: string;
+  after: string;
+}
+
+interface PortfolioItem {
   id: string;
-  name: string;
+  artist: string;
+  title: string;
   genre: string;
-  seedA: number;
-  seedB: number;
-  before: number;
-  after: number;
+  year: number;
+  audio: AudioEntry;
+  services: string[];
 }
 
-const TRACKS: Track[] = [
-  { id: 'trap', name: 'MVRK — "Riverland Freestyle"', genre: 'Trap / Drill', seedA: 7, seedB: 13, before: 0.55, after: 1.0 },
-  { id: 'rnb', name: 'Lz — "Slow Down"', genre: 'R&B / Urbano', seedA: 23, seedB: 41, before: 0.45, after: 0.95 },
-  { id: 'hh', name: 'Flaxe — "Calle 09"', genre: 'Hip-Hop Boom-bap', seedA: 91, seedB: 77, before: 0.5, after: 1.0 },
-];
+type ActiveSide = 'before' | 'after' | null;
 
-interface WaveBarsProps {
-  count?: number;
-  seed?: number;
-  intensity?: number;
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const R2_DOMAIN = 'r2.dev';
+
+/** Keep only items whose audio URLs belong to the real R2 bucket. */
+const tracks: PortfolioItem[] = (portfolioData as PortfolioItem[]).filter(
+  (item) =>
+    item.audio.before.includes(R2_DOMAIN) &&
+    item.audio.after.includes(R2_DOMAIN),
+);
+
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-const WaveBars = memo(function WaveBars({ count = 80, seed = 1, intensity = 1 }: WaveBarsProps) {
-  const bars = useMemo(() => {
-    const arr: number[] = [];
-    let s = seed;
-    const rand = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
-    for (let i = 0; i < count; i++) {
-      const base = Math.sin(i / 4) * 0.3 + Math.sin(i / 11) * 0.4 + 0.5;
-      const noise = rand() * 0.6 + 0.4;
-      arr.push(Math.max(0.08, Math.min(1, base * noise * intensity)));
-    }
-    return arr;
-  }, [count, seed, intensity]);
-
-  return (
-    <div className="bars">
-      {bars.map((h, i) => <div key={i} className="bar" style={{ height: `${h * 100}%` }} />)}
-    </div>
-  );
-});
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export function BeforeAfter() {
-  const [tab, setTab] = useState(0);
-  const [split, setSplit] = useState(50);
-  const [playing, setPlaying] = useState(false);
+  const [tabIndex, setTabIndex] = useState(0);
+  const [activeSide, setActiveSide] = useState<ActiveSide>(null);
   const [progress, setProgress] = useState(0);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const draggingRef = useRef(false);
-  const reveal = useReveal();
-  const t = TRACKS[tab];
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
+  const beforeRef = useRef<HTMLAudioElement>(null);
+  const afterRef = useRef<HTMLAudioElement>(null);
+  const reveal = useReveal();
+
+  const track = tracks[tabIndex];
+
+  // ── Set initial volume on mount ───────────────────────────────────────────
   useEffect(() => {
-    let pending = false;
-    const onMove = (e: MouseEvent | TouchEvent) => {
-      if (!draggingRef.current || !wrapRef.current || pending) return;
-      pending = true;
-      requestAnimationFrame(() => {
-        pending = false;
-        if (!draggingRef.current || !wrapRef.current) return;
-        const r = wrapRef.current.getBoundingClientRect();
-        const clientX = 'touches' in e ? (e as TouchEvent).touches[0].clientX : (e as MouseEvent).clientX;
-        setSplit(Math.max(0, Math.min(100, ((clientX - r.left) / r.width) * 100)));
-      });
-    };
-    const onUp = () => { draggingRef.current = false; document.body.style.cursor = ''; };
-    window.addEventListener('mousemove', onMove as EventListener);
-    window.addEventListener('touchmove', onMove as EventListener, { passive: true });
-    window.addEventListener('mouseup', onUp);
-    window.addEventListener('touchend', onUp);
-    return () => {
-      window.removeEventListener('mousemove', onMove as EventListener);
-      window.removeEventListener('touchmove', onMove as EventListener);
-      window.removeEventListener('mouseup', onUp);
-      window.removeEventListener('touchend', onUp);
-    };
+    [beforeRef, afterRef].forEach((r) => {
+      if (r.current) r.current.volume = 0.1;
+    });
   }, []);
 
+  // ── Stop everything and reset state when the tab changes ──────────────────
   useEffect(() => {
-    if (!playing) return;
-    const id = setInterval(() => setProgress((p) => (p >= 100 ? 0 : p + 0.4)), 100);
-    return () => clearInterval(id);
-  }, [playing]);
+    const stopAll = () => {
+      [beforeRef, afterRef].forEach((r) => {
+        if (!r.current) return;
+        r.current.pause();
+        r.current.currentTime = 0;
+      });
+    };
+    stopAll();
+    setActiveSide(null);
+    setProgress(0);
+    setCurrentTime(0);
+    setDuration(0);
+  }, [tabIndex]);
 
-  const startDrag = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    draggingRef.current = true;
-    document.body.style.cursor = 'ew-resize';
+  // ── Wire up time/duration listeners whenever activeSide changes ───────────
+  useEffect(() => {
+    const el =
+      activeSide === 'before'
+        ? beforeRef.current
+        : activeSide === 'after'
+          ? afterRef.current
+          : null;
+
+    if (!el) return;
+
+    const onTimeUpdate = () => {
+      setCurrentTime(el.currentTime);
+      setProgress(el.duration > 0 ? (el.currentTime / el.duration) * 100 : 0);
+    };
+
+    const onLoadedMetadata = () => {
+      setDuration(el.duration);
+    };
+
+    const onEnded = () => {
+      setActiveSide(null);
+      setProgress(0);
+      setCurrentTime(0);
+    };
+
+    el.addEventListener('timeupdate', onTimeUpdate);
+    el.addEventListener('loadedmetadata', onLoadedMetadata);
+    el.addEventListener('ended', onEnded);
+
+    return () => {
+      el.removeEventListener('timeupdate', onTimeUpdate);
+      el.removeEventListener('loadedmetadata', onLoadedMetadata);
+      el.removeEventListener('ended', onEnded);
+    };
+  }, [activeSide]);
+
+  // ── Button handler ────────────────────────────────────────────────────────
+  const handlePlay = (side: 'before' | 'after') => {
+    const targetRef = side === 'before' ? beforeRef : afterRef;
+    const otherRef = side === 'before' ? afterRef : beforeRef;
+
+    // Pause the other side
+    if (otherRef.current) {
+      otherRef.current.pause();
+      otherRef.current.currentTime = 0;
+    }
+
+    if (!targetRef.current) return;
+
+    if (activeSide === side) {
+      // Same button pressed → toggle pause/play
+      if (targetRef.current.paused) {
+        targetRef.current.play().catch(() => {
+          /* autoplay blocked — user interaction already happened, safe to ignore */
+        });
+      } else {
+        targetRef.current.pause();
+        setActiveSide(null);
+        return;
+      }
+    } else {
+      // Switch to this side
+      targetRef.current.currentTime = 0;
+      targetRef.current.play().catch(() => {
+        /* autoplay blocked */
+      });
+      setProgress(0);
+      setCurrentTime(0);
+      setDuration(targetRef.current.duration || 0);
+    }
+
+    setActiveSide(side);
   };
 
-  const seconds = Math.floor((progress / 100) * 142);
-  const mm = String(Math.floor(seconds / 60)).padStart(2, '0');
-  const ss = String(seconds % 60).padStart(2, '0');
+  // ── Seek on progress bar click ────────────────────────────────────────────
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    const targetRef =
+      activeSide === 'before'
+        ? beforeRef
+        : activeSide === 'after'
+          ? afterRef
+          : null;
+    if (!targetRef?.current || !targetRef.current.duration) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    targetRef.current.currentTime = ratio * targetRef.current.duration;
+  };
+
+  if (tracks.length === 0) return null;
+
+  const isBeforePlaying = activeSide === 'before';
+  const isAfterPlaying = activeSide === 'after';
 
   return (
     <section className="section" id="demo">
-      <div className="section-head reveal" ref={reveal as React.RefObject<HTMLDivElement>} style={{ marginBottom: 32 }}>
+      {/* Hidden audio elements */}
+      <audio ref={beforeRef} src={track.audio.before} preload="metadata" />
+      <audio ref={afterRef} src={track.audio.after} preload="metadata" />
+
+      {/* Section head */}
+      <div
+        className="section-head reveal"
+        ref={reveal as React.RefObject<HTMLDivElement>}
+        style={{ marginBottom: 32 }}
+      >
         <div className="idx">
           <span>01 / DEMO</span>
           <span className="num">01</span>
         </div>
         <div>
-          <h2>Antes<br />y <em>después.</em></h2>
-          <p>La prueba está en cómo suena. Arrastra la línea vertical para cruzar del take crudo al tema listo para Spotify. Sin filtros de marketing — audio real de proyectos propios.</p>
+          <h2>
+            Antes
+            <br />y <em>después.</em>
+          </h2>
+          <p>
+            La prueba está en cómo suena. Escucha el audio crudo y el tema listo
+            para Spotify. Sin filtros de marketing — audio real de proyectos
+            propios.
+          </p>
         </div>
       </div>
 
+      {/* Track tabs */}
       <div className="ba-tabs" role="tablist" aria-label="Seleccionar tema">
-        {TRACKS.map((tk, i) => (
+        {tracks.map((tk, i) => (
           <button
             key={tk.id}
-            className={i === tab ? 'on' : ''}
-            onClick={() => { setTab(i); setProgress(0); }}
+            className={i === tabIndex ? 'on' : ''}
+            onClick={() => setTabIndex(i)}
             role="tab"
-            aria-selected={i === tab}
+            aria-selected={i === tabIndex}
+            aria-controls="ba-player"
           >
-            {String(i + 1).padStart(2, '0')} · {tk.name.split(' — ')[0]} · {tk.genre}
+            {String(i + 1).padStart(2, '0')} · {tk.artist} · {tk.genre}
           </button>
         ))}
       </div>
 
-      <div className="ba-wrap">
+      {/* Player card */}
+      <div className="ba-wrap" id="ba-player" role="tabpanel">
+        {/* Card header */}
         <div className="ba-head">
           <div>
-            <div className="title">{t.name}</div>
-            <div className="meta" style={{ textAlign: 'left', marginTop: 8 }}>{t.genre} · Studio session {String(tab + 1).padStart(2, '0')}</div>
+            <div className="title">
+              {track.artist} — &ldquo;{track.title}&rdquo;
+            </div>
+            <div className="meta" style={{ textAlign: 'left', marginTop: 8 }}>
+              {track.genre} · {track.year}
+            </div>
           </div>
           <div className="meta">
-            <div>WAV 24-bit · 48kHz</div>
-            <div>Tempo auto · Key match</div>
+            {track.services.map((s) => (
+              <div key={s} style={{ textTransform: 'capitalize' }}>
+                {s}
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="ba-player">
-          <div
-            className="ba-wave"
-            ref={wrapRef}
-            onMouseDown={startDrag}
-            onTouchStart={startDrag}
-            aria-label="Comparador antes/después — arrastra para comparar"
+        {/* Play buttons */}
+        <div className="ba-btn-row">
+          <button
+            className={`ba-side-btn${isBeforePlaying ? ' active' : ''}`}
+            onClick={() => handlePlay('before')}
+            aria-label={
+              isBeforePlaying ? 'Pausar versión antes' : 'Reproducir versión antes'
+            }
+            aria-pressed={isBeforePlaying}
           >
-            <span className="ba-label l">Antes</span>
-            <span className="ba-label r">Después</span>
-            <div className="side before">
-              <WaveBars count={90} seed={t.seedA} intensity={t.before} />
-            </div>
-            <div className="side after" style={{ clipPath: `inset(0 0 0 ${split}%)` }}>
-              <WaveBars count={90} seed={t.seedB} intensity={t.after} />
-            </div>
-            <div className="ba-divider" style={{ left: `${split}%` }}>
+            <span className="ba-side-icon">
+              {isBeforePlaying ? <Icons.pause /> : <Icons.play />}
+            </span>
+            <span className="ba-side-label">Antes</span>
+            <span className="ba-side-tag">Sin procesar</span>
+          </button>
+
+          <div className="ba-vs" aria-hidden="true">VS</div>
+
+          <button
+            className={`ba-side-btn after${isAfterPlaying ? ' active' : ''}`}
+            onClick={() => handlePlay('after')}
+            aria-label={
+              isAfterPlaying
+                ? 'Pausar versión después'
+                : 'Reproducir versión después'
+            }
+            aria-pressed={isAfterPlaying}
+          >
+            <span className="ba-side-icon">
+              {isAfterPlaying ? <Icons.pause /> : <Icons.play />}
+            </span>
+            <span className="ba-side-label">Después</span>
+            <span className="ba-side-tag">Mix &amp; Master</span>
+          </button>
+        </div>
+
+        {/* Progress bar */}
+        <div className="ba-progress-row">
+          <span className="ba-time">{formatTime(currentTime)}</span>
+          <div
+            className="ba-progress-track"
+            onClick={handleSeek}
+            role="slider"
+            aria-label="Progreso de reproducción"
+            aria-valuenow={Math.round(progress)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            tabIndex={activeSide !== null ? 0 : -1}
+          >
+            <div
+              className="ba-progress-fill"
+              style={{ width: `${progress}%` }}
+            />
+            {activeSide !== null && (
               <div
-                className="handle"
-                onMouseDown={startDrag}
-                onTouchStart={startDrag}
-                role="slider"
-                aria-label="Posición del comparador"
-                aria-valuenow={Math.round(split)}
-                aria-valuemin={0}
-                aria-valuemax={100}
-              >
-                &#8249; &#8250;
-              </div>
-            </div>
+                className="ba-progress-thumb"
+                style={{ left: `${progress}%` }}
+                aria-hidden="true"
+              />
+            )}
           </div>
-          <div className="ba-controls">
-            <button className="play" onClick={() => setPlaying((p) => !p)} aria-label={playing ? 'Pausar' : 'Reproducir'}>
-              {playing ? <Icons.pause /> : <Icons.play />}
-            </button>
-            <div className="track">
-              <strong>{mm}:{ss}</strong>
-              <div style={{ flex: 1, height: 2, background: 'var(--hair)', borderRadius: 1, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${progress}%`, background: 'var(--slate)', transition: 'width .3s' }} />
-              </div>
-              <span>02:22</span>
-            </div>
-          </div>
+          <span className="ba-time">{duration > 0 ? formatTime(duration) : '--:--'}</span>
         </div>
       </div>
     </section>
