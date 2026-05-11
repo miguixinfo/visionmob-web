@@ -1,18 +1,6 @@
 [
   {
-    "id": "001",
-    "artist": "Lz",
-    "title": "4fun$",
-    "genre": "Reggaeton",
-    "year": 2026,
-    "audio": {
-      "before": "https://pub-d350a86e5dd34ee8aeed535d6c11d329.r2.dev/portfolio/before-after/001-lz-4fun/before.mp3",
-      "after": "https://pub-d350a86e5dd34ee8aeed535d6c11d329.r2.dev/portfolio/before-after/001-lz-4fun/after.mp3"
-    },
-    "services": ["mixing", "mastering"]
-  },
-  {
-    "id": "002",
+    "id": "002-lz-youngmoney",
     "artist": "Lz",
     "title": "Young Money",
     "genre": "Trap Urbano",
@@ -21,20 +9,88 @@
       "before": "https://pub-d350a86e5dd34ee8aeed535d6c11d329.r2.dev/portfolio/before-after/002-lz-youngmoney/before.mp3",
       "after": "https://pub-d350a86e5dd34ee8aeed535d6c11d329.r2.dev/portfolio/before-after/002-lz-youngmoney/after.mp3"
     },
+    "links": {
+      "spotify": null,
+      "youtube": null
+    },
     "services": ["mixing", "mastering"]
   },
   {
-    "id": "003",
-    "artist": "Nombre Artista",
-    "title": "Título del Tema",
-    "genre": "Afrobeat",
-    "year": 2024,
+    "id": "002-flaxe-lmqds",
+    "artist": "Flaxe",
+    "title": "LMQDS",
+    "genre": "Hip Hop Urbano",
+    "year": 2026,
     "audio": {
-      "before": "https://cdn.visionmob.com/portfolio/before-after/003-artista-titulo/before.mp3",
-      "after": "https://cdn.visionmob.com/portfolio/before-after/003-artista-titulo/after.mp3"
+      "before": "https://pub-d350a86e5dd34ee8aeed535d6c11d329.r2.dev/portfolio/before-after/002-flaxe-lmqds/before.mp3",
+      "after": "https://pub-d350a86e5dd34ee8aeed535d6c11d329.r2.dev/portfolio/before-after/002-flaxe-lmqds/after.mp3"
     },
     "links": {
-      "spotify": "https://open.spotify.com/track/...",
+      "spotify": null,
+      "youtube": null
+    },
+    "services": ["mixing", "mastering"]
+  },
+  {
+    "id": "001-lz-4fun",
+    "artist": "Lz",
+    "title": "4fun$",
+    "genre": "Reggaeton",
+    "year": 2026,
+    "audio": {
+      "before": "https://pub-d350a86e5dd34ee8aeed535d6c11d329.r2.dev/portfolio/before-after/001-lz-4fun/before.mp3",
+      "after": "https://pub-d350a86e5dd34ee8aeed535d6c11d329.r2.dev/portfolio/before-after/001-lz-4fun/after.mp3"
+    },
+    "links": {
+      "spotify": null,
+      "youtube": null
+    },
+    "services": ["mixing", "mastering"]
+  },
+  {
+    "id": "001-flaxe-todoloqueves",
+    "artist": "Flaxe",
+    "title": "Todo lo que ves",
+    "genre": "Urbano",
+    "year": 2026,
+    "audio": {
+      "before": "https://pub-d350a86e5dd34ee8aeed535d6c11d329.r2.dev/portfolio/before-after/001-flaxe-todoloqueves/before.mp3",
+      "after": "https://pub-d350a86e5dd34ee8aeed535d6c11d329.r2.dev/portfolio/before-after/001-flaxe-todoloqueves/after.mp3"
+    },
+    "links": {
+      "spotify": null,
+      "youtube": null
+    },
+    "services": ["mixing", "mastering"]
+  },
+  {
+    "id": "001-peiro-inevitable",
+    "artist": "Peiro",
+    "title": "Inevitable",
+    "genre": "Hip Hop Urbano",
+    "year": 2026,
+    "audio": {
+      "before": "https://pub-d350a86e5dd34ee8aeed535d6c11d329.r2.dev/portfolio/before-after/001-peiro-inevitable/before.mp3",
+      "after": "https://pub-d350a86e5dd34ee8aeed535d6c11d329.r2.dev/portfolio/before-after/001-peiro-inevitable/after.mp3"
+    },
+    "links": {
+      "spotify": "https://open.spotify.com/intl-es/track/47mbEo7BVkprCFc2pC3OKT?si=22cd3e754c3f4c3c",
+      "youtube": null
+    },
+    "services": ["mixing", "mastering"]
+  },
+  {
+    "id": "001-hoodholi-siberia",
+    "artist": "HoodHoli",
+    "title": "Siberia",
+    "genre": "Trap Urbano",
+    "year": 2026,
+    "audio": {
+      "before": "https://pub-d350a86e5dd34ee8aeed535d6c11d329.r2.dev/portfolio/before-after/001-hoodholi-siberia/before.mp3",
+      "after": "https://pub-d350a86e5dd34ee8aeed535d6c11d329.r2.dev/portfolio/before-after/001-hoodholi-siberia/after.mp3"
+    },
+    "links": {
+      "spotify": null,
       "youtube": null
     },
     "services": ["mixing", "mastering"]
