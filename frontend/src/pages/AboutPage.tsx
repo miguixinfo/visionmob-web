@@ -59,6 +59,7 @@ interface MemberRowProps {
   quote: string;
   code: string;
   accent: string;
+  delay?: number;
   instagram?: string;
   tiktok?: string;
   spotifyId?: string;
@@ -66,7 +67,7 @@ interface MemberRowProps {
   linkedin?: string;
 }
 
-function MemberRow({ idx, name, role, tag, quote, code, accent, instagram, tiktok, spotifyId, github, linkedin }: MemberRowProps) {
+function MemberRow({ idx, name, role, tag, quote, code, accent, delay = 0, instagram, tiktok, spotifyId, github, linkedin }: MemberRowProps) {
   const [inView, setInView] = useState(false);
   const [widgetOpen, setWidgetOpen] = useState(false);
   const articleRef = useRef<HTMLElement>(null);
@@ -99,6 +100,7 @@ function MemberRow({ idx, name, role, tag, quote, code, accent, instagram, tikto
     <article
       ref={articleRef}
       className={cls}
+      style={inView ? undefined : { transitionDelay: `${delay}ms` }}
       data-cursor="big"
     >
       <div className="ab-row-portrait">
@@ -284,6 +286,7 @@ function AboutTeam() {
           tag="◆ LA CONSOLA"
           quote="Si no te pone los pelos de punta a la primera, no está mezclado — está apilado."
           accent="rgba(127,119,221,0.45)"
+          delay={0}
           instagram="#"
           tiktok="#"
           spotifyId="58hvJy4OWGwkh65JRMASeC"
@@ -296,6 +299,7 @@ function AboutTeam() {
           tag="★ EL OÍDO"
           quote="El máster no arregla una mierda — afina lo que ya suena bien. Por eso empezamos por el mix."
           accent="rgba(194,102,138,0.40)"
+          delay={120}
           instagram="#"
           tiktok="#"
           spotifyId="528L0u2yXdYMBDFW9bnWmd"
@@ -308,6 +312,7 @@ function AboutTeam() {
           tag="◇ EL CÓDIGO"
           quote="Si la web no carga en dos segundos, el artista ya se fue. Construyo para que el estudio no se note — solo se use."
           accent="rgba(127,221,180,0.38)"
+          delay={240}
           instagram="#"
           tiktok="#"
           github="https://github.com/miguixinfo"
@@ -355,22 +360,72 @@ function AboutValues() {
 }
 
 const STATS = [
-  { n: '200+', l: 'Temas mezclados' },
-  { n: '09', l: 'Años cocinando' },
-  { n: '14', l: 'Ciudades en el mapa' },
-  { n: '03', l: 'Cabezas · 0 jefes' },
+  { target: 200, suffix: '+', pad: 0, l: 'Temas mezclados' },
+  { target: 9,   suffix: '',  pad: 2, l: 'Años cocinando' },
+  { target: 14,  suffix: '',  pad: 0, l: 'Ciudades en el mapa' },
+  { target: 3,   suffix: '',  pad: 2, l: 'Cabezas · 0 jefes' },
 ];
 
+function useCountUp(target: number, active: boolean, duration = 1800, delay = 0) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    let frameId: number;
+    let startTime: number | null = null;
+    const tick = (now: number) => {
+      if (startTime === null) startTime = now + delay;
+      if (now < startTime) { frameId = requestAnimationFrame(tick); return; }
+      const t = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setCount(t < 1 ? Math.floor(eased * target) : target);
+      if (t < 1) frameId = requestAnimationFrame(tick);
+    };
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, [active, target, duration, delay]);
+  return count;
+}
+
+function StatItem({ target, suffix, pad, label, active, delay }: {
+  target: number; suffix: string; pad: number; label: string; active: boolean; delay: number;
+}) {
+  const count = useCountUp(target, active, 1800, delay);
+  const display = String(count).padStart(pad, '0');
+  return (
+    <div className="ab-stat">
+      <div className="ab-stat-n">{display}{suffix}</div>
+      <div className="ab-stat-l">{label}</div>
+    </div>
+  );
+}
+
 function AboutStats() {
-  const reveal = useReveal();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(false);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setActive(true); io.disconnect(); }
+    }, { threshold: 0.25 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
     <section className="section" id="stats" style={{ paddingTop: 0 }}>
-      <div className="ab-stats reveal" ref={reveal as React.RefObject<HTMLDivElement>}>
+      <div className="ab-stats" ref={containerRef}>
         {STATS.map((s, i) => (
-          <div className="ab-stat" key={i}>
-            <div className="ab-stat-n">{s.n}</div>
-            <div className="ab-stat-l">{s.l}</div>
-          </div>
+          <StatItem
+            key={i}
+            target={s.target}
+            suffix={s.suffix}
+            pad={s.pad}
+            label={s.l}
+            active={active}
+            delay={i * 80}
+          />
         ))}
       </div>
     </section>
