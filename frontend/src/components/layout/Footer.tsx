@@ -53,10 +53,9 @@ export function Footer() {
         <div className="footer-col">
           <h5>Legal</h5>
           <ul>
-            <li><a href="#">Términos</a></li>
-            <li><a href="#">Privacidad</a></li>
-            <li><a href="#">Cookies</a></li>
-            <li><a href="#">Copyright</a></li>
+            <li><Link to="/terminos">Términos y Condiciones</Link></li>
+            <li><Link to="/privacidad">Política de Privacidad</Link></li>
+            <li><Link to="/aviso-legal">Aviso Legal</Link></li>
           </ul>
         </div>
       </div>
